@@ -29,7 +29,9 @@ class User(UserBase):
 # ========== Article Schemas ==========
 class ArticleBase(BaseModel):
     title: str
-    content: str
+    authors: str | None = None
+    content: str | None = None
+    article_url: str | None = None
 
 
 class ArticleCreate(ArticleBase):
