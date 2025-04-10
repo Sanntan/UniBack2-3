@@ -125,19 +125,16 @@ def delete_author(db: Session, author_id: int):
 
 
 # ========== Article CRUD ==========
-def create_article(db: Session, article: ArticleCreate, author_ids: List[int] = None):
+def create_article(db: Session, article_data: dict):
     db_article = models.Article(
-        title=article.title,
-        content=article.content
+        title=article_data['title'],
+        authors=article_data.get('authors'),
+        content=article_data.get('content'),
+        article_url=article_data.get('article_url')  # Новое поле
     )
     db.add(db_article)
     db.commit()
     db.refresh(db_article)
-
-    if author_ids:
-        for author_id in author_ids:
-            add_author_to_article(db, article_id=db_article.article_id, author_id=author_id)
-
     return db_article
 
 
