@@ -5,14 +5,14 @@ from pathlib import Path
 import pandas as pd
 
 # Добавляем корень проекта в PYTHONPATH
-sys.path.append(str(Path(__file__).parent.parent))
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from database.config import SessionLocal
 from database.models import Article
 from sqlalchemy.exc import SQLAlchemyError
 
 # Путь к файлу CSV
-CSV_PATH = "TestData/articles_3800.csv"
+CSV_PATH = "TestData/articles_and_authors.csv"
 
 
 def import_articles():

@@ -17,7 +17,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 
 def clear_all_tables():
-    """Очищает все таблицы и сбрасывает article_id"""
+    """Очищает все таблицы и сбрасывает все sequence"""
     db = SessionLocal()
     try:
         # Отключаем проверку внешних ключей
@@ -31,14 +31,23 @@ def clear_all_tables():
         db.query(Article).delete()
         db.query(User).delete()
 
-        # Сбрасываем sequence для статьи
-        db.execute(text("ALTER SEQUENCE article_article_id_seq RESTART WITH 1;"))
+        # Сбрасываем sequences для всех таблиц
+        sequences = [
+            "user_user_id_seq",
+            "interface_settings_settings_id_seq",
+            "favorites_favorites_id_seq",
+            "article_article_id_seq",
+            "article_vector_vector_id_seq"
+        ]
+
+        for seq in sequences:
+            db.execute(text(f"ALTER SEQUENCE {seq} RESTART WITH 1;"))
 
         # Включаем проверку внешних ключей обратно
         db.execute(text("SET session_replication_role = 'origin';"))
 
         db.commit()
-        print("✅ Все таблицы очищены. Счётчик ID для article сброшен.")
+        print("✅ Все таблицы очищены. Все счётчики ID сброшены.")
     except SQLAlchemyError as e:
         db.rollback()
         print(f"❌ Ошибка при очистке таблиц: {e}")
