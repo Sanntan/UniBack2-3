@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-import pandas as pd
+from tqdm import tqdm
 
 # Добавляем корень проекта в PYTHONPATH
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
@@ -9,46 +9,46 @@ from database.config import SessionLocal
 from database.models import Article, ArticleVector
 from sqlalchemy.exc import SQLAlchemyError
 
-# Путь к CSV-файлу
-CSV_PATH = "TestData/articles_with_vectors.csv"
+# Путь к файлу
+CSV_PATH = "TestData/articles_with_embeddings_cleaned.csv"
 
 def parse_vector_string(vector_str):
     vector_str = vector_str.strip().replace("[", "").replace("]", "")
     return [float(x.strip()) for x in vector_str.split(",") if x.strip()]
 
-def import_articles_and_vectors():
-    try:
-        df = pd.read_csv(CSV_PATH, sep="|")
-    except Exception as e:
-        print(f"Ошибка при чтении CSV: {e}")
-        return
-
+def import_articles_and_vectors_from_raw():
     db = SessionLocal()
     articles = []
     vectors = []
-
-    START_ID = 1001  # начальный ID для новых записей
+    START_ID = 1001
 
     try:
-        for idx, row in df.iterrows():
-            title = str(row.get("Title", "")).strip()
-            authors = str(row.get("Authors", "")).strip()
-            abstract = str(row.get("Abstract", "")).strip()
-            pdf_link = str(row.get("PDF", "")).strip()
-            vector_raw = str(row.get("Vector", "")).strip()
+        with open(CSV_PATH, encoding="utf-8") as f:
+            lines = f.readlines()
 
-            if not title or not vector_raw:
-                print(f"⚠️ Пропуск записи на строке {idx + 2}: нет Title или Vector")
+        print(f"Найдено {len(lines)-1} строк для загрузки.")  # -1 чтобы исключить заголовок
+
+        for idx, line in tqdm(enumerate(lines[1:]), total=len(lines)-1, desc="Импорт"):
+            parts = line.strip().split("|", 4)  # максимум 5 частей
+
+            if len(parts) != 5:
+                print(f"⚠️ Пропущена строка {idx + 2}: неправильное количество полей ({len(parts)})")
+                continue
+
+            title, authors, abstract, pdf_link, vector_raw = parts
+
+            if not title.strip() or not vector_raw.strip():
+                print(f"⚠️ Пропуск пустой записи на строке {idx + 2}")
                 continue
 
             article_id = START_ID + idx
 
             article = Article(
                 article_id=article_id,
-                title=title,
-                authors=authors,
-                content=abstract,
-                article_url=pdf_link
+                title=title.strip(),
+                authors=authors.strip(),
+                content=abstract.strip(),
+                article_url=pdf_link.strip()
             )
             articles.append(article)
 
@@ -60,12 +60,11 @@ def import_articles_and_vectors():
             )
             vectors.append(vector)
 
-        # bulk сохранение
         if articles and vectors:
             db.bulk_save_objects(articles)
             db.bulk_save_objects(vectors)
             db.commit()
-            print(f"✅ Успешно импортировано {len(articles)} статей и {len(vectors)} векторов.")
+            print(f"\n✅ Успешно импортировано {len(articles)} статей и {len(vectors)} векторов.")
         else:
             print("⚠️ Нет данных для вставки.")
 
@@ -76,4 +75,4 @@ def import_articles_and_vectors():
         db.close()
 
 if __name__ == "__main__":
-    import_articles_and_vectors()
+    import_articles_and_vectors_from_raw()
